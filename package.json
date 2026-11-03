@@ -1,7 +1,16 @@
 {
   "name": "dsh-plugin-pet-desktop",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "灵灵 · DSH 桌面宠物：常驻屏幕左下角的透明悬浮小窗，里面是完整 DSH 界面。双击展开、▽ 收回、可拖动、可换形象。",
+  "author": "lingling79 <lingling79@qq.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lingling79/dsh-plugin-pet.git"
+  },
+  "homepage": "https://github.com/lingling79/dsh-plugin-pet#readme",
+  "bugs": {
+    "url": "https://github.com/lingling79/dsh-plugin-pet/issues"
+  },
   "keywords": [
     "dsh",
     "dsh-plugin",

@@ -3,8 +3,6 @@
 把 DSH 变成一只待在屏幕左下角的小桌宠：不占浏览器标签页、不占任务栏、不进 Alt+Tab、
 永远在最上层。双击她展开成完整的 DSH 聊天窗口，不用的时候右上角 **▽** 一按，缩回成宠物。
 
-![桌宠与聊天窗](https://raw.githubusercontent.com/USER/REPO/main/docs/preview.png)
-
 > **素材来源声明（重要）**
 > 桌宠形象与全部 24 段动画来自开源项目 **PC2005-cloud/dsh-pet v0.4.1**（GitHub / npm，**MIT** 许可证）。
 > 本插件只复用它的 webm 动画素材，代码与形态完全不同（它是 DSH 界面内的浮窗，本插件是独立 Electron 窗口）。
@@ -21,16 +19,22 @@ DSH 的网页版要开浏览器、要切标签页、要在一堆窗口里找。�
 
 包名：`dsh-plugin-pet-desktop`
 
-### 方式 1：从插件市场装（已上架时）
+### 方式 1：一行命令（推荐）
 
-在 DSH 的插件市场里搜 **灵灵** 或 **pet-desktop**，点安装。
+```bash
+dsh plugin --profile web add dsh-plugin-pet-desktop
+```
 
-### 方式 2：命令行装本地包（推荐，离线可用）
+装完重启 DSH（关掉那个跑 `dsh web` 的黑窗口再开），桌宠会自己出现在左下角。
 
-拿到 `dsh-plugin-pet-desktop-1.0.0.tgz` 后：
+也可在 DSH 的插件市场里搜 **灵灵** 或 **pet-desktop**，点安装。
+
+### 方式 2：装本地包（离线可用）
+
+拿到 `dsh-plugin-pet-desktop-1.0.1.tgz` 后：
 
 ```powershell
-dsh plugin --profile web add C:\path\to\dsh-plugin-pet-desktop-1.0.0.tgz
+dsh plugin --profile web add C:\path\to\dsh-plugin-pet-desktop-1.0.1.tgz
 ```
 
 或者指向解压出来的目录：
@@ -38,8 +42,6 @@ dsh plugin --profile web add C:\path\to\dsh-plugin-pet-desktop-1.0.0.tgz
 ```powershell
 dsh plugin --profile web add C:\path\to\dsh-plugin-pet
 ```
-
-装完重启 DSH（关掉那个跑 `dsh web` 的黑窗口再开），桌宠会自己出现在左下角。
 
 ### 方式 3：不用插件，直接装独立版
 

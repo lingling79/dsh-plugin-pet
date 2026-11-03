@@ -1,0 +1,8 @@
+node_modules/
+*.tgz
+*.zip
+*.log
+dist/*.tgz
+.DS_Store
+Thumbs.db
+ref-pets/
