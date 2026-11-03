@@ -1,0 +1,15 @@
+# Bundle patch for dsh-plugin-pet-desktop.
+#
+# `dsh plugin --profile web add <这个包>` 会把它装进 profile 并写进
+# dsh.profile.bundles，于是下面这一行每次启动都会自动并入插件树，
+# 不需要手改 profile 自己的 cordis.patch.yml。
+#
+# 没有这个文件（以及 package.json 里的 dsh.bundle.patch 指针）的包不能列进
+# dsh.profile.bundles：启动会报 "declares no dsh.bundle in its package.json"，
+# 整个 harness 起不来。所以这个文件和 package.json 必须一起发。
+#
+# `name` 相对本文件（DSH 会把 ./ 路径改写成 file URL），插件装在哪个 profile 都能解析。
+
+- insert:
+    - id: pet-desktop
+      name: './lib/index.js'

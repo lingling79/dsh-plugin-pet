@@ -1,0 +1,366 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>灵灵</title>
+<style>
+  html,
+  body {
+    margin: 0;
+    height: 100%;
+    background: transparent;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+    cursor: grab;
+  }
+  body.dragging {
+    cursor: grabbing;
+  }
+  #stage {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: visible;
+  }
+  /* 内置动画素材是 640x360 横版，角色只占画面中间一块（alpha 包围盒
+     x 228..430 / y 60..328）。所以按「角色高度」而不是「视频高度」来铺：
+     视频整体放大到角色刚好占满窗口，多出来的左右留白和底部空白由
+     负 bottom 偏移推出可视区。数值 = 角色包围盒实测换算。 */
+  .anim {
+    position: absolute;
+    left: 50%;
+    bottom: -11%;
+    height: 124%;
+    width: auto;
+    transform: translateX(-50%) translateX(-6%);
+    -webkit-user-drag: none;
+    pointer-events: none;
+    filter: drop-shadow(0 8px 14px rgba(30, 20, 80, 0.42));
+    display: none;
+  }
+  .anim.on {
+    display: block;
+  }
+  /* 自定义图片按原图完整放进窗口 */
+  #img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    -webkit-user-drag: none;
+    pointer-events: none;
+    filter: drop-shadow(0 8px 14px rgba(30, 20, 80, 0.42));
+    display: none;
+  }
+  #tip {
+    position: absolute;
+    left: 50%;
+    bottom: 2px;
+    transform: translateX(-50%);
+    font: 11px/1.5 "Segoe UI", system-ui, sans-serif;
+    color: #fff;
+    background: rgba(88, 66, 176, 0.88);
+    padding: 1px 8px 2px;
+    border-radius: 8px;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.15s;
+    pointer-events: none;
+  }
+  body:hover #tip {
+    opacity: 1;
+  }
+  body.dragging #tip {
+    opacity: 0;
+  }
+</style>
+<div id="stage"></div>
+<img id="img" alt="灵灵" />
+<div id="tip">单击逗我 · 双击聊天 · 拖动换位置 · 右键菜单</div>
+<script>
+  const api = window.dshPet;
+  const stage = document.getElementById("stage");
+  const img = document.getElementById("img");
+
+  // ── 动画表（全部拆自插件市场热门桌宠 PC2005-cloud/dsh-pet ★5206 的透明 webm 素材）──
+  const IDLE = "待机呼吸休闲";
+  const IDLE_VARIANTS = ["东张西望", "哈欠连天", "超大伸懒腰", "原地漂浮踏步"];
+  // 单击的反应池：5 个「点击回应」+ 跳跃抓碎头顶物品 + 被吓一跳
+  const REACTIONS = [
+    "点击回应-元气挥手",
+    "点击回应-开心跃动",
+    "点击回应-傲娇生气",
+    "点击回应-害羞惊讶",
+    "点击回应-挠痒咯咯笑",
+    "原地跳跃抓碎头顶物品",
+    "被吓一跳",
+  ];
+  const OPEN = "点击回应-开心跃动"; // 双击开窗时放这个
+  const DRAG = "被鼠标拖拽悬空反馈";
+  const SLEEP_START = "睡觉-开始";
+  const SLEEP_LOOP = "睡觉-循环";
+  const SLEEP_END = "睡觉-起来";
+  const TALENTS = [
+    "轻快摇摆舞",
+    "可爱宅舞",
+    "凭空生花",
+    "小幅度原地360度旋转展示",
+    "鲸鱼吐泡泡特效",
+    "原地专心玩魔方",
+    "写代码",
+    "撸猫",
+  ];
+
+  const ALL = [
+    IDLE,
+    ...IDLE_VARIANTS,
+    ...REACTIONS,
+    DRAG,
+    SLEEP_START,
+    SLEEP_LOOP,
+    SLEEP_END,
+    ...TALENTS,
+  ];
+  const UNIQUE = [...new Set(ALL)];
+
+  // ── 预建 video 池：切换动画不用等加载，也不会闪黑 ──
+  const pool = new Map();
+  let returnTo = IDLE; // 一次性动画播完回到哪
+  let current = null; // 正在播的动画名
+  let mode = "builtin"; // builtin | image
+  let sleeping = false;
+
+  function play(name, { once = false, back = IDLE } = {}) {
+    if (mode !== "builtin") return;
+    if (sleeping && name !== SLEEP_END && name !== SLEEP_LOOP) return;
+    const v = pool.get(name);
+    if (!v) return;
+    if (current === name && !once) return;
+    for (const [n, el] of pool) {
+      if (n !== name) {
+        el.classList.remove("on");
+        el.pause();
+      }
+    }
+    v.dataset.once = once ? "1" : "0";
+    returnTo = back;
+    current = name;
+    v.classList.add("on");
+    try {
+      v.currentTime = 0;
+    } catch {}
+    const p = v.play();
+    if (p && p.catch) p.catch(() => {});
+  }
+
+  for (const name of UNIQUE) {
+    const v = document.createElement("video");
+    v.className = "anim";
+    v.src = `anims/${name}.webm`;
+    v.muted = true;
+    v.defaultMuted = true;
+    v.playsInline = true;
+    v.disablePictureInPicture = true;
+    v.preload = "auto";
+    v.addEventListener("ended", () => {
+      if (v.dataset.once === "1") {
+        v.dataset.once = "0";
+        play(returnTo, { once: returnTo === SLEEP_LOOP });
+      }
+    });
+    stage.appendChild(v);
+    pool.set(name, v);
+  }
+
+  function playRandom(list, opts) {
+    play(list[Math.floor(Math.random() * list.length)], opts);
+  }
+
+  // ── 闲置节奏：先换小动作，再睡着，有互动就醒 ──
+  const IDLE_VARIANT_MS = 22000;
+  const SLEEP_AFTER_MS = 95000;
+  const TALENT_MS = 210000;
+  let idleTimer = null;
+  let sleepTimer = null;
+  let talentTimer = null;
+
+  function loopIdleVariants() {
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => {
+      if (mode === "builtin" && !sleeping && current === IDLE) {
+        playRandom(IDLE_VARIANTS, { once: true, back: IDLE });
+      }
+      loopIdleVariants();
+    }, IDLE_VARIANT_MS);
+  }
+
+  function loopTalents() {
+    clearTimeout(talentTimer);
+    talentTimer = setTimeout(() => {
+      if (mode === "builtin" && !sleeping) playRandom(TALENTS, { once: true, back: IDLE });
+      loopTalents();
+    }, TALENT_MS);
+  }
+
+  function scheduleSleep() {
+    clearTimeout(sleepTimer);
+    sleepTimer = setTimeout(() => {
+      if (mode !== "builtin" || sleeping) return;
+      sleeping = true;
+      current = null;
+      play(SLEEP_START, { once: true, back: SLEEP_LOOP });
+    }, SLEEP_AFTER_MS);
+  }
+
+  function wakeUp() {
+    sleeping = false;
+    play(SLEEP_END, { once: true, back: IDLE });
+  }
+
+  function bumpActivity() {
+    loopIdleVariants();
+    loopTalents();
+    scheduleSleep();
+  }
+
+  // ── 形象切换（自定义图片 / 内置动画）──
+  api.onAsset((asset) => {
+    if (!asset) return;
+    if (asset.kind === "image") {
+      mode = "image";
+      sleeping = false;
+      for (const el of pool.values()) {
+        el.classList.remove("on");
+        el.pause();
+      }
+      current = null;
+      img.src = asset.src;
+      img.style.display = "block";
+    } else {
+      mode = "builtin";
+      img.style.display = "none";
+      img.removeAttribute("src");
+      sleeping = false;
+      current = null;
+      play(IDLE);
+      bumpActivity();
+    }
+  });
+
+  // ── 指针交互：拖动 / 单击 / 双击 ──
+  const DRAG_THRESHOLD = 9; // 累计位移超过这么多才算拖动
+  let downAt = 0;
+  let downX = 0;
+  let downY = 0;
+  let dragging = false;
+  let pending = false;
+  let clickTimer = null;
+
+  document.addEventListener("pointerdown", (e) => {
+    if (e.button !== 0) return;
+    if (mode === "image") {
+      // 自定义图片模式：保留旧的双击时间差判定
+      const now = Date.now();
+      if (now - downAt < 420) {
+        downAt = 0;
+        api.openChat();
+        e.preventDefault();
+        return;
+      }
+      downAt = now;
+    }
+    pending = true;
+    dragging = false;
+    downX = e.screenX;
+    downY = e.screenY;
+    try {
+      document.body.setPointerCapture(e.pointerId);
+    } catch {}
+    // 按下就开始跟随（主进程轮询鼠标），这样窗口从按下的那一点开始跟，
+    // 不会出现"先甩出去一段才追上"的空档。真位移不到阈值就松开 = 点击。
+    api.dragStart();
+    e.preventDefault();
+  });
+
+  document.addEventListener("pointermove", (e) => {
+    if (!pending) return;
+    if (!dragging && Math.abs(e.screenX - downX) + Math.abs(e.screenY - downY) >= DRAG_THRESHOLD) {
+      dragging = true;
+      pending = false;
+      document.body.classList.add("dragging");
+      sleeping = false;
+      clearTimeout(sleepTimer);
+      play(DRAG);
+    }
+    api.dragMove();
+  });
+
+  function onPointerUp() {
+    if (!pending && !dragging) return;
+    const wasDragging = dragging;
+    pending = false;
+    dragging = false;
+    document.body.classList.remove("dragging");
+    api.dragEnd();
+    if (wasDragging) {
+      play(IDLE);
+      bumpActivity();
+      return;
+    }
+    // 没拖动 → 判单击 / 双击（等 320ms 看有没有第二下）
+    if (clickTimer) {
+      clearTimeout(clickTimer);
+      clickTimer = null;
+      sleeping = false;
+      play(OPEN, { once: true, back: IDLE });
+      api.openChat();
+      return;
+    }
+    clickTimer = setTimeout(() => {
+      clickTimer = null;
+      if (mode === "image") return;
+      if (sleeping) {
+        wakeUp();
+        bumpActivity();
+        return;
+      }
+      playRandom(REACTIONS, { once: true, back: IDLE });
+      bumpActivity();
+    }, 320);
+  }
+  document.addEventListener("pointerup", onPointerUp);
+  document.addEventListener("pointercancel", onPointerUp);
+
+  // 主进程发现鼠标长时间不动（pointerup 丢了）会主动结束拖动，这里跟着复位
+  api.onDragCancel(() => {
+    if (!dragging && !pending) return;
+    pending = false;
+    dragging = false;
+    document.body.classList.remove("dragging");
+    if (mode !== "image") play(IDLE);
+    bumpActivity();
+  });
+
+  document.addEventListener("contextmenu", (e) => {
+    e.preventDefault();
+    if (sleeping) wakeUp();
+    bumpActivity();
+    api.petMenu();
+  });
+
+  // Ctrl + 滚轮调大小
+  document.addEventListener(
+    "wheel",
+    (e) => {
+      if (!e.ctrlKey) return;
+      e.preventDefault();
+      api.petResize(e.deltaY > 0 ? -1 : 1);
+    },
+    { passive: false },
+  );
+
+  play(IDLE);
+  loopIdleVariants();
+  loopTalents();
+  scheduleSleep();
+</script>

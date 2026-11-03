@@ -1,0 +1,48 @@
+{
+  "name": "dsh-plugin-pet-desktop",
+  "version": "1.0.0",
+  "description": "灵灵 · DSH 桌面宠物：常驻屏幕左下角的透明悬浮小窗，里面是完整 DSH 界面。双击展开、▽ 收回、可拖动、可换形象。",
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "desktop-pet",
+    "pet",
+    "cordis",
+    "electron",
+    "floating-window",
+    "always-on-top"
+  ],
+  "license": "MIT",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./launcher": "./lib/launcher.mjs",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "app",
+    "cordis.patch.yml",
+    "NOTICE.md",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "compatibility": {
+      "dshReleases": {
+        "0.2.1-rc.2": "compatible",
+        "0.2.1-rc.3": "compatible",
+        "0.2.2-alpha.2": "compatible"
+      }
+    }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "name": "dsh-pet",
+  "version": "1.0.0",
+  "private": true,
+  "description": "灵灵 · DSH 桌宠：左下角常驻的 DSH 聊天小窗",
+  "main": "main.js"
+}
