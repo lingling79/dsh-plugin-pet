@@ -29,12 +29,21 @@ dsh plugin --profile web add dsh-plugin-pet-desktop
 
 也可在 DSH 的插件市场里搜 **灵灵** 或 **pet-desktop**，点安装。
 
+### 装完桌面上会有「灵灵」图标（v1.0.3 起）
+
+第一次启动桌宠时，插件会在桌面放一个 **灵灵** 快捷方式，指向下好的 Electron 运行时 +
+本插件的 `app/` 目录。留着它，以后不用开 DSH 也能双击直接叫出桌宠。
+
+- 桌面上**已经有**同名 `灵灵.lnk` 时不会覆盖（避免顶掉你自己做的那份）
+- 没有桌面权限（少数域控环境）就跳过这一步，只打一行日志，不影响桌宠启动
+- 想手动重建：删掉桌面那个 lnk，重启一次 DSH 即可
+
 ### 方式 2：装本地包（离线可用）
 
-拿到 `dsh-plugin-pet-desktop-1.0.1.tgz` 后：
+拿到 `dsh-plugin-pet-desktop-1.0.3.tgz` 后：
 
 ```powershell
-dsh plugin --profile web add C:\path\to\dsh-plugin-pet-desktop-1.0.1.tgz
+dsh plugin --profile web add C:\path\to\dsh-plugin-pet-desktop-1.0.3.tgz
 ```
 
 或者指向解压出来的目录：
